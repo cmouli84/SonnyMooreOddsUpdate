@@ -3,12 +3,17 @@ package com.scribble.nbacb;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
+import com.amazonaws.services.dynamodbv2.document.ScanOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.scribble.nbacb.models.SonnyMoorePrediction;
@@ -21,13 +26,25 @@ public class SonnyMooreOddsUpdateHandler implements RequestHandler<Object, Boole
         context.getLogger().log("Input: " + input);
         
         DynamoDB dynamoDb = new DynamoDB(Regions.US_WEST_2);
+
+        Table teams = dynamoDb.getTable("ScoreApiTeams");
+
+        ScanSpec spec = new ScanSpec();
+        ItemCollection<ScanOutcome> result = teams.scan(spec);
         
-        Table events = dynamoDb.getTable("Event");
+        Map<String, String> scoreTeams = new HashMap<>();
+        for (Item item: result)
+        {
+        	scoreTeams.put(item.getString("ScoreApiTeamName").trim().toUpperCase(), 
+        			item.getString("SonnyMooreTeamName").trim().toUpperCase());
+        }
+        
+        Table events = dynamoDb.getTable("Events");
         
         CollegeBasketBallOddsService service = new CollegeBasketBallOddsService();
 
 		try {
-			List<SonnyMoorePrediction> sonnyMoorePredictions = service.getSonnyMooreRankings();
+			List<SonnyMoorePrediction> sonnyMoorePredictions = service.getSonnyMooreRankings(scoreTeams);
 
 	        for (SonnyMoorePrediction prediction: sonnyMoorePredictions)
 	        {

@@ -116,7 +116,7 @@ public class CollegeBasketBallOddsRepository {
 		{
 			matches.add(event);
 		}
-		
+
 		return matches;
 	}	
 
@@ -182,12 +182,7 @@ public class CollegeBasketBallOddsRepository {
 	
 	private String GetTeamName(String teamName)
 	{
-		String formattedTeamName = teamName.trim().toUpperCase().replace('-', ' ');
-		if (formattedTeamName.startsWith("ST."))
-		{
-			formattedTeamName = formattedTeamName.replace((CharSequence)"ST.", (CharSequence)"SAINT");
-		}
-		formattedTeamName = formattedTeamName.replace((CharSequence)"ST.", (CharSequence)"STATE");
+		String formattedTeamName = teamName.trim().toUpperCase();
 		
 		return formattedTeamName;
 	}

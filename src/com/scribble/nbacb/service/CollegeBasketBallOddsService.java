@@ -9,8 +9,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
-import org.joda.time.DateTime;
+import java.util.Map;
 
 import com.scribble.nbacb.models.PowerRanking;
 import com.scribble.nbacb.models.SonnyMoorePrediction;
@@ -21,18 +20,18 @@ public class CollegeBasketBallOddsService {
 
 	private CollegeBasketBallOddsRepository nbacbRepository = new CollegeBasketBallOddsRepository();
 
-	public List<SonnyMoorePrediction> getSonnyMooreRankings() throws IOException, ParseException
+	public List<SonnyMoorePrediction> getSonnyMooreRankings(Map<String, String> scoreTeams) throws IOException, ParseException
 	{
 		List<SonnyMoorePrediction> sonnyMoorePredictions = new ArrayList<>();
 		
 		List<PowerRanking> sonnyMoorePowerRankings = nbacbRepository.getSonnyMoorePowerRaking();
 		List<Event> events = nbacbRepository.getCurrentEvents();
 
-		Date currentTime = DateTime.now().toDate();
 		Calendar toDateCalendar = Calendar.getInstance();
+		Date currentTime = toDateCalendar.getTime();
 		toDateCalendar.add(Calendar.HOUR, 1);
 		Date toDate = toDateCalendar.getTime();
-		
+
 		for (Event event: events)
 		{
 			DateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
@@ -40,16 +39,16 @@ public class CollegeBasketBallOddsService {
 
 			if (eventDate.after(currentTime) && eventDate.before(toDate))
 			{
-				String homeTeamName = event.getHome_team().getFull_name().toUpperCase();
-				String awayTeamName = event.getAway_team().getFull_name().toUpperCase();
+				String homeTeamName = scoreTeams.get(event.getHome_team().getFull_name().trim().toUpperCase());
+				String awayTeamName = scoreTeams.get(event.getAway_team().getFull_name().trim().toUpperCase());
 
-				PowerRanking homeTeam = getMatchingTeamName(sonnyMoorePowerRankings, homeTeamName);
-				PowerRanking awayTeam = getMatchingTeamName(sonnyMoorePowerRankings, awayTeamName);
+				PowerRanking homeTeam = (homeTeamName == null) ? null : getMatchingTeamName(sonnyMoorePowerRankings, homeTeamName);
+				PowerRanking awayTeam = (awayTeamName == null) ? null : getMatchingTeamName(sonnyMoorePowerRankings, awayTeamName);
 
 				sonnyMoorePredictions.add(new SonnyMoorePrediction() {{
 					setEventId(event.getId());
-					setHomeTeamName(homeTeamName);
-					setAwayTeamName(awayTeamName);
+					setHomeTeamName(event.getHome_team().getFull_name());
+					setAwayTeamName(event.getAway_team().getFull_name());
 					setHomeTeamRanking((homeTeam == null) ? 0 : homeTeam.getPowerRanking());
 					setAwayTeamRanking((awayTeam == null) ? 0 : awayTeam.getPowerRanking());
 					setGameDate(eventDate);
