@@ -48,7 +48,7 @@ public class SonnyMooreOddsUpdateHandler implements RequestHandler<Object, Boole
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
+        
         // TODO: implement your handler
         return true;
     }

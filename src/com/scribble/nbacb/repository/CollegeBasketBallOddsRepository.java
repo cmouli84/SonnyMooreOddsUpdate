@@ -8,15 +8,18 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.scribble.nbacb.models.PowerRanking;
 import com.scribble.nbacb.models.events.Event;
-import com.scribble.nbacb.models.schedule.Current_group;
+import com.scribble.nbacb.models.schedule.Current_season;
 import com.scribble.nbacb.models.schedule.Season;
 
 public class CollegeBasketBallOddsRepository {
@@ -99,6 +102,26 @@ public class CollegeBasketBallOddsRepository {
 	
 	public List<Event> getCurrentEvents() throws MalformedURLException, IOException
 	{
+		List<Event> matches = new ArrayList<>();
+		Calendar toDateCalendar = Calendar.getInstance();
+		toDateCalendar.add(Calendar.HOUR, 24);
+		List<Event> todayMatches = getMatchesByDate(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
+		List<Event> tomorrowMatches = getMatchesByDate(new SimpleDateFormat("yyyy-MM-dd").format(toDateCalendar.getTime()));
+		
+		for (Event event: todayMatches)
+		{
+			matches.add(event);
+		}
+		for (Event event: tomorrowMatches)
+		{
+			matches.add(event);
+		}
+		
+		return matches;
+	}	
+
+	private List<Event> getMatchesByDate(String matchDate) throws MalformedURLException, IOException
+	{
 		String scheduleUrl = "http://api.thescore.com/ncaab/schedule";
 		String eventsUrlFormat = "http://api.thescore.com/ncaab/events?id.in=%s";
 		List<Event> matches = new ArrayList<>();
@@ -107,7 +130,15 @@ public class CollegeBasketBallOddsRepository {
 		String scheduleResponse = getWebResponse(scheduleUrl);
 		Season season = mapper.readValue(scheduleResponse, Season.class);
 
-		Current_group matchSeason = season.getCurrent_group();
+		Current_season matchSeason = null;
+		for (Current_season currSeason: season.getCurrent_season())
+		{
+			if (currSeason.getId().equals(matchDate))
+			{
+				matchSeason = currSeason;
+				break;
+			}
+		}
 		
 		if (matchSeason != null)
 		{
@@ -115,12 +146,15 @@ public class CollegeBasketBallOddsRepository {
 			String eventsUrl = String.format(eventsUrlFormat, URLEncoder.encode(eventIds, "utf-8"));
 			
 			String eventsResponse = getWebResponse(eventsUrl);
+			System.out.println(eventsUrl);
+			System.out.println(eventsResponse);
 			matches = Arrays.asList(mapper.readValue(eventsResponse, Event[].class));
 		}
 		
 		return matches;
 	}	
-
+	
+	
 	private String getWebResponse(String url) throws MalformedURLException, IOException, ProtocolException {
 		URL obj = new URL(url);
 		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
