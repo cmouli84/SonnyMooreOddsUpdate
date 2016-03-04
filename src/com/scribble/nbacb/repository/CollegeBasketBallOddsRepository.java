@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,7 +101,7 @@ public class CollegeBasketBallOddsRepository {
 		return powerRankings;
 	}
 	
-	public List<Event> getCurrentEvents() throws MalformedURLException, IOException
+	public List<Event> getCurrentEvents() throws MalformedURLException, IOException, ParseException
 	{
 		List<Event> matches = new ArrayList<>();
 		Calendar toDateCalendar = Calendar.getInstance();
@@ -120,7 +121,7 @@ public class CollegeBasketBallOddsRepository {
 		return matches;
 	}	
 
-	private List<Event> getMatchesByDate(String matchDate) throws MalformedURLException, IOException
+	private List<Event> getMatchesByDate(String matchDate) throws MalformedURLException, IOException, ParseException
 	{
 		String scheduleUrl = "http://api.thescore.com/ncaab/schedule";
 		String eventsUrlFormat = "http://api.thescore.com/ncaab/events?id.in=%s";
@@ -130,20 +131,31 @@ public class CollegeBasketBallOddsRepository {
 		String scheduleResponse = getWebResponse(scheduleUrl);
 		Season season = mapper.readValue(scheduleResponse, Season.class);
 
-		Current_season matchSeason = null;
+		List<Integer> eventIds = null;
 		for (Current_season currSeason: season.getCurrent_season())
 		{
 			if (currSeason.getId().equals(matchDate))
 			{
-				matchSeason = currSeason;
+				eventIds = currSeason.getEvent_ids();
 				break;
 			}
 		}
 		
-		if (matchSeason != null)
+		if (isToday(new SimpleDateFormat("yyyy-MM-dd").parse(matchDate)))
 		{
-			String eventIds = String.join(",", Arrays.toString(matchSeason.getEvent_ids().toArray()));
-			String eventsUrl = String.format(eventsUrlFormat, URLEncoder.encode(eventIds, "utf-8"));
+			for (Integer eventId: season.getCurrent_group().getEvent_ids())
+			{
+				if (!eventIds.contains(eventId))
+				{
+					eventIds.add(eventId);
+				}
+			}
+		}
+		
+		if (eventIds != null)
+		{
+			String strEventIds = String.join(",", Arrays.toString(eventIds.toArray()));
+			String eventsUrl = String.format(eventsUrlFormat, URLEncoder.encode(strEventIds, "utf-8"));
 			
 			String eventsResponse = getWebResponse(eventsUrl);
 			System.out.println(eventsUrl);
@@ -186,5 +198,15 @@ public class CollegeBasketBallOddsRepository {
 		
 		return formattedTeamName;
 	}
+	
+	private static Boolean isToday(Date matchDate) {
+		Calendar matchDateCalendar = Calendar.getInstance();
+		matchDateCalendar.setTime(matchDate);
+		Calendar currentDateCalendar = Calendar.getInstance();
+		return (matchDateCalendar.get(Calendar.YEAR) == currentDateCalendar.get(Calendar.YEAR) 
+				&& matchDateCalendar.get(Calendar.MONTH) == currentDateCalendar.get(Calendar.MONTH) 
+				&& matchDateCalendar.get(Calendar.DATE) == currentDateCalendar.get(Calendar.DATE));
+	}
+
 	
 }
