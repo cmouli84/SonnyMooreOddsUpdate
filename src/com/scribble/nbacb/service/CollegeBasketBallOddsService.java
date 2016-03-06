@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.amazonaws.services.dynamodbv2.document.AttributeUpdate;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.PrimaryKey;
+import com.amazonaws.services.dynamodbv2.document.Table;
 import com.scribble.nbacb.models.PowerRanking;
 import com.scribble.nbacb.models.SonnyMoorePrediction;
 import com.scribble.nbacb.models.events.Event;
@@ -20,7 +24,8 @@ public class CollegeBasketBallOddsService {
 
 	private CollegeBasketBallOddsRepository nbacbRepository = new CollegeBasketBallOddsRepository();
 
-	public List<SonnyMoorePrediction> getSonnyMooreRankings(Map<String, String> scoreTeams) throws IOException, ParseException
+	public List<SonnyMoorePrediction> getSonnyMooreRankings(Map<String, String> scoreTeams, Table eventsTable) 
+			throws IOException, ParseException
 	{
 		List<SonnyMoorePrediction> sonnyMoorePredictions = new ArrayList<>();
 		
@@ -31,7 +36,12 @@ public class CollegeBasketBallOddsService {
 		Date currentTime = toDateCalendar.getTime();
 		toDateCalendar.add(Calendar.HOUR, 1);
 		Date toDate = toDateCalendar.getTime();
-
+		Calendar resultCalendar = Calendar.getInstance();
+		resultCalendar.add(Calendar.MINUTE, -160);
+		Date resultToDateCalendar = resultCalendar.getTime();
+		resultCalendar.add(Calendar.HOUR, -1);
+		Date resultFromDateCalendar = resultCalendar.getTime();
+		
 		for (Event event: events)
 		{
 			DateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
@@ -45,7 +55,7 @@ public class CollegeBasketBallOddsService {
 				PowerRanking homeTeam = (homeTeamName == null) ? null : getMatchingTeamName(sonnyMoorePowerRankings, homeTeamName);
 				PowerRanking awayTeam = (awayTeamName == null) ? null : getMatchingTeamName(sonnyMoorePowerRankings, awayTeamName);
 
-				sonnyMoorePredictions.add(new SonnyMoorePrediction() {{
+				addEvent(eventsTable, new SonnyMoorePrediction() {{
 					setEventId(event.getId());
 					setHomeTeamName(event.getHome_team().getFull_name());
 					setAwayTeamName(event.getAway_team().getFull_name());
@@ -54,9 +64,52 @@ public class CollegeBasketBallOddsService {
 					setGameDate(eventDate);
 				}});
 			}
+
+			if (eventDate.after(resultFromDateCalendar) && eventDate.before(resultToDateCalendar))
+			{
+				System.out.println("Event Id before update : " + event.getId());
+				updateEvent(eventsTable, event);
+			}
 		}
 		
 		return sonnyMoorePredictions;
+	}
+	
+	private void addEvent(Table events, SonnyMoorePrediction prediction)
+	{
+        Item currentEvent = new Item();
+        currentEvent.withInt("EventId", prediction.getEventId());
+        currentEvent.withString("HomeTeamName", prediction.getHomeTeamName());
+        currentEvent.withString("AwayTeamName", prediction.getAwayTeamName());
+        currentEvent.withDouble("HomeTeamRanking", prediction.getHomeTeamRanking());
+        currentEvent.withDouble("AwayTeamRanking", prediction.getAwayTeamRanking());
+        currentEvent.withString("EventDate", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(prediction.getGameDate()));
+        
+    	events.putItem(currentEvent);
+
+	}
+	
+	private void updateEvent(Table events, Event event)
+	{
+		PrimaryKey primaryKey = new PrimaryKey();
+		primaryKey.addComponent("EventId", event.getId());
+		AttributeUpdate homeScoreUpdate = new AttributeUpdate("HomeScore");
+		homeScoreUpdate.put(event.getBox_score().getScore().getHome().getScore());
+		AttributeUpdate awayScoreUpdate = new AttributeUpdate("AwayScore");
+		awayScoreUpdate.put(event.getBox_score().getScore().getAway().getScore());
+		AttributeUpdate homeOdds = new AttributeUpdate("HomeOdds");
+		homeOdds.put(getOdd(event));
+		
+		events.updateItem(primaryKey, homeScoreUpdate, awayScoreUpdate, homeOdds);
+	}
+	
+	private Double getOdd(Event event)
+	{
+		return event.getOdd() == null || event.getOdd().getHome_odd().startsWith("pk") || event.getOdd().getHome_odd().startsWith("N") 
+				? -999999 
+				: event.getOdd().getHome_odd().startsWith("T") 
+					? (-1) * Double.parseDouble(event.getOdd().getAway_odd()) 
+					: Double.parseDouble(event.getOdd().getHome_odd());
 	}
 	
 	private PowerRanking getMatchingTeamName(List<PowerRanking> sonnyMoorePowerRanking, String teamName) {

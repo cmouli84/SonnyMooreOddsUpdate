@@ -44,7 +44,7 @@ public class SonnyMooreOddsUpdateHandler implements RequestHandler<Object, Boole
         CollegeBasketBallOddsService service = new CollegeBasketBallOddsService();
 
 		try {
-			List<SonnyMoorePrediction> sonnyMoorePredictions = service.getSonnyMooreRankings(scoreTeams);
+			List<SonnyMoorePrediction> sonnyMoorePredictions = service.getSonnyMooreRankings(scoreTeams, events);
 
 	        for (SonnyMoorePrediction prediction: sonnyMoorePredictions)
 	        {
