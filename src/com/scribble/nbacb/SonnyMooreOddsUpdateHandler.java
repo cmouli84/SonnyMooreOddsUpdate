@@ -6,7 +6,6 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
@@ -27,24 +26,12 @@ public class SonnyMooreOddsUpdateHandler implements RequestHandler<Object, Boole
         
         DynamoDB dynamoDb = new DynamoDB(Regions.US_WEST_2);
 
-        Table teams = dynamoDb.getTable("ScoreApiTeams");
-
-        ScanSpec spec = new ScanSpec();
-        ItemCollection<ScanOutcome> result = teams.scan(spec);
-        
-        Map<String, String> scoreTeams = new HashMap<>();
-        for (Item item: result)
-        {
-        	scoreTeams.put(item.getString("ScoreApiTeamName").trim().toUpperCase(), 
-        			item.getString("SonnyMooreTeamName").trim().toUpperCase());
-        }
-        
-        Table events = dynamoDb.getTable("Events");
+        Table events = dynamoDb.getTable("NflEvents");
         
         CollegeBasketBallOddsService service = new CollegeBasketBallOddsService();
 
 		try {
-			List<SonnyMoorePrediction> sonnyMoorePredictions = service.getSonnyMooreRankings(scoreTeams, events);
+			List<SonnyMoorePrediction> sonnyMoorePredictions = service.getSonnyMooreRankings(events);
 
 	        for (SonnyMoorePrediction prediction: sonnyMoorePredictions)
 	        {

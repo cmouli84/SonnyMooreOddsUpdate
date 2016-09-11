@@ -24,7 +24,7 @@ public class CollegeBasketBallOddsService {
 
 	private CollegeBasketBallOddsRepository nbacbRepository = new CollegeBasketBallOddsRepository();
 
-	public List<SonnyMoorePrediction> getSonnyMooreRankings(Map<String, String> scoreTeams, Table eventsTable) 
+	public List<SonnyMoorePrediction> getSonnyMooreRankings(Table eventsTable) 
 			throws IOException, ParseException
 	{
 		List<SonnyMoorePrediction> sonnyMoorePredictions = new ArrayList<>();
@@ -37,7 +37,7 @@ public class CollegeBasketBallOddsService {
 		toDateCalendar.add(Calendar.HOUR, 1);
 		Date toDate = toDateCalendar.getTime();
 		Calendar resultCalendar = Calendar.getInstance();
-		resultCalendar.add(Calendar.MINUTE, -160);
+		resultCalendar.add(Calendar.MINUTE, -220);
 		Date resultToDateCalendar = resultCalendar.getTime();
 		resultCalendar.add(Calendar.HOUR, -1);
 		Date resultFromDateCalendar = resultCalendar.getTime();
@@ -49,8 +49,8 @@ public class CollegeBasketBallOddsService {
 
 			if (eventDate.after(currentTime) && eventDate.before(toDate))
 			{
-				String homeTeamName = scoreTeams.get(event.getHome_team().getFull_name().trim().toUpperCase());
-				String awayTeamName = scoreTeams.get(event.getAway_team().getFull_name().trim().toUpperCase());
+				String homeTeamName = event.getHome_team().getFull_name().trim().toUpperCase();
+				String awayTeamName = event.getAway_team().getFull_name().trim().toUpperCase();
 
 				PowerRanking homeTeam = (homeTeamName == null) ? null : getMatchingTeamName(sonnyMoorePowerRankings, homeTeamName);
 				PowerRanking awayTeam = (awayTeamName == null) ? null : getMatchingTeamName(sonnyMoorePowerRankings, awayTeamName);
@@ -91,6 +91,11 @@ public class CollegeBasketBallOddsService {
 	
 	private void updateEvent(Table events, Event event)
 	{
+		System.out.println(event.getId());
+		System.out.println(event.getBox_score().getScore().getHome().getScore());
+		System.out.println(event.getBox_score().getScore().getAway().getScore());
+		System.out.println(getOdd(event));
+		
 		PrimaryKey primaryKey = new PrimaryKey();
 		primaryKey.addComponent("EventId", event.getId());
 		AttributeUpdate homeScoreUpdate = new AttributeUpdate("HomeScore");
@@ -113,7 +118,7 @@ public class CollegeBasketBallOddsService {
 	}
 	
 	private PowerRanking getMatchingTeamName(List<PowerRanking> sonnyMoorePowerRanking, String teamName) {
-		ArrayList<PowerRanking> secondMatch = new ArrayList<PowerRanking>();
+//		ArrayList<PowerRanking> secondMatch = new ArrayList<PowerRanking>();
 		System.out.println("TeamName : " + teamName);
 		
 		for (PowerRanking powerRanking : sonnyMoorePowerRanking)
@@ -124,13 +129,13 @@ public class CollegeBasketBallOddsService {
 				return powerRanking;
 			}
 
-			if (powerRanking.getTeamName().startsWith(teamName))
+/*			if (powerRanking.getTeamName().startsWith(teamName))
 			{
 				secondMatch.add(powerRanking);
-			}
+			}*/
 		}
 		
-		PowerRanking hardMatch = TryFindMatch(teamName, sonnyMoorePowerRanking, "HC");
+/*		PowerRanking hardMatch = TryFindMatch(teamName, sonnyMoorePowerRanking, "HC");
 		if (hardMatch != null)
 		{
 			System.out.println(hardMatch.getTeamName());
@@ -150,12 +155,12 @@ public class CollegeBasketBallOddsService {
 				System.out.println(matchTeam.getTeamName());
 				return matchTeam;
 			}
-		}
+		}*/
 		
 		return null;
 	}
 	
-	private PowerRanking TryFindMatch(String teamName, List<PowerRanking> matches, String pattern)
+/*	private PowerRanking TryFindMatch(String teamName, List<PowerRanking> matches, String pattern)
 	{
 		ArrayList<PowerRanking> secondMatch = new ArrayList<>();
 		if (pattern.equals("HC"))
@@ -239,5 +244,5 @@ public class CollegeBasketBallOddsService {
 		}
 		
 		return null;
-	}
+	}*/
 }

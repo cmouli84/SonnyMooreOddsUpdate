@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ public class CollegeBasketBallOddsRepository {
 
 	public List<PowerRanking> getSonnyMoorePowerRaking() throws MalformedURLException, IOException
 	{
-		String url = "http://sonnymoorepowerratings.com/m-basket.htm";
+		String url = "http://sonnymoorepowerratings.com/nfl-foot.htm";
 		
 		URL obj = new URL(url);
 		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -52,7 +53,7 @@ public class CollegeBasketBallOddsRepository {
 			{
 				content = content.trim();
 
-				if (contentStarted && content.equals("<BR>"))
+				if (contentStarted && content.equals("</H3>"))
 				{
 					break;
 				}
@@ -106,8 +107,8 @@ public class CollegeBasketBallOddsRepository {
 		List<Event> matches = new ArrayList<>();
 		Calendar toDateCalendar = Calendar.getInstance();
 		toDateCalendar.add(Calendar.HOUR, 24);
-		List<Event> todayMatches = getMatchesByDate(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
-		List<Event> tomorrowMatches = getMatchesByDate(new SimpleDateFormat("yyyy-MM-dd").format(toDateCalendar.getTime()));
+		List<Event> todayMatches = getMatchesByDate(new Date());
+		List<Event> tomorrowMatches = getMatchesByDate(toDateCalendar.getTime());
 		
 		for (Event event: todayMatches)
 		{
@@ -121,27 +122,27 @@ public class CollegeBasketBallOddsRepository {
 		return matches;
 	}	
 
-	private List<Event> getMatchesByDate(String matchDate) throws MalformedURLException, IOException, ParseException
+	private List<Event> getMatchesByDate(Date matchDate) throws MalformedURLException, IOException, ParseException
 	{
-		String scheduleUrl = "http://api.thescore.com/ncaab/schedule";
-		String eventsUrlFormat = "http://api.thescore.com/ncaab/events?id.in=%s";
+		String scheduleUrl = "http://api.thescore.com/nfl/schedule";
+		String eventsUrlFormat = "http://api.thescore.com/nfl/events?id.in=%s";
 		List<Event> matches = new ArrayList<>();
 		ObjectMapper mapper = new ObjectMapper();
 		
 		String scheduleResponse = getWebResponse(scheduleUrl);
 		Season season = mapper.readValue(scheduleResponse, Season.class);
 
-		List<Integer> eventIds = null;
+		List<Integer> eventIds = new ArrayList<>();
 		for (Current_season currSeason: season.getCurrent_season())
 		{
-			if (currSeason.getId().equals(matchDate))
-			{
-				eventIds = currSeason.getEvent_ids();
-				break;
+			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+00:00'");
+			if (dateFormat.parse(currSeason.getStart_date()).before(matchDate) 
+					&& dateFormat.parse(currSeason.getEnd_date()).after(matchDate)) {
+				eventIds.addAll(currSeason.getEvent_ids());
 			}
 		}
 		
-		if (isToday(new SimpleDateFormat("yyyy-MM-dd").parse(matchDate)))
+		if (isToday(matchDate))
 		{
 			for (Integer eventId: season.getCurrent_group().getEvent_ids())
 			{
@@ -154,7 +155,10 @@ public class CollegeBasketBallOddsRepository {
 		
 		if (eventIds != null)
 		{
-			String strEventIds = String.join(",", Arrays.toString(eventIds.toArray()));
+			String strEventIds = String.join(",", Arrays.toString(eventIds.toArray()))
+					.replaceAll("\\[*", "")
+					.replaceAll("\\]*", "")
+					.replaceAll("\\ *", "");
 			String eventsUrl = String.format(eventsUrlFormat, URLEncoder.encode(strEventIds, "utf-8"));
 			
 			String eventsResponse = getWebResponse(eventsUrl);
