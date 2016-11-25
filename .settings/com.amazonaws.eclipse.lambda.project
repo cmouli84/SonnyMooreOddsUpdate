@@ -1,6 +1,5 @@
 #Lambda Function Project Metadata
-#Sun Sep 11 11:09:37 PDT 2016
-lastInvokeShowLiveLog=false
+#Fri Nov 25 12:21:15 PST 2016
 lastDeploymentFunctionName=SonnyMooreOddsUpdateHandle
 lastDeploymentBucketName=mouli-credentials
 lastDeploymentEndpoint=https\://lambda.us-west-2.amazonaws.com/
