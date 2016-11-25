@@ -14,12 +14,15 @@ public class SonnyMooreOddsUpdateHandler implements RequestHandler<Object, Boole
         context.getLogger().log("Input: " + input);
         
         DynamoDB dynamoDb = new DynamoDB(Regions.US_WEST_2);
-        Table events = dynamoDb.getTable("NflEvents");
+        Table nflEvents = dynamoDb.getTable("NflEvents");
+        Table ncaabEvents = dynamoDb.getTable("NcaabEvents");
+        Table ncaabTeams = dynamoDb.getTable("ScoreApiTeams");
         
         CollegeBasketBallOddsService service = new CollegeBasketBallOddsService();
 
         try {
-    		service.updateNflSonnyMooreRankings(events);
+    		service.updateNflSonnyMooreRankings(nflEvents);
+    		service.updateNcaabSonnyMooreRankings(ncaabEvents, ncaabTeams);
         }
         catch (Exception ex) {
         	System.out.println(ex.toString());

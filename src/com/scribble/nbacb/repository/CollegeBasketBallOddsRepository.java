@@ -26,7 +26,7 @@ import com.scribble.nbacb.models.schedule.Season;
 
 public class CollegeBasketBallOddsRepository {
 
-	public List<PowerRanking> getSonnyMoorePowerRaking() throws MalformedURLException, IOException
+	public List<PowerRanking> getNflSonnyMoorePowerRaking() throws MalformedURLException, IOException
 	{
 		String url = "http://sonnymoorepowerratings.com/nfl-foot.htm";
 		
@@ -102,13 +102,16 @@ public class CollegeBasketBallOddsRepository {
 		return powerRankings;
 	}
 	
-	public List<Event> getCurrentEvents() throws MalformedURLException, IOException, ParseException
+	public List<Event> getNflCurrentEvents() throws MalformedURLException, IOException, ParseException
 	{
+		String scheduleUrl = "http://api.thescore.com/nfl/schedule";
+		String eventsUrlFormat = "http://api.thescore.com/nfl/events?id.in=%s";
+
 		List<Event> matches = new ArrayList<>();
 		Calendar toDateCalendar = Calendar.getInstance();
 		toDateCalendar.add(Calendar.HOUR, 24);
-		List<Event> todayMatches = getMatchesByDate(new Date());
-		List<Event> tomorrowMatches = getMatchesByDate(toDateCalendar.getTime());
+		List<Event> todayMatches = getMatchesByDate(new Date(), scheduleUrl, eventsUrlFormat);
+		List<Event> tomorrowMatches = getMatchesByDate(toDateCalendar.getTime(), scheduleUrl, eventsUrlFormat);
 		
 		for (Event event: todayMatches)
 		{
@@ -122,10 +125,107 @@ public class CollegeBasketBallOddsRepository {
 		return matches;
 	}	
 
-	private List<Event> getMatchesByDate(Date matchDate) throws MalformedURLException, IOException, ParseException
+	public List<PowerRanking> getNcaabSonnyMoorePowerRaking() throws MalformedURLException, IOException
 	{
-		String scheduleUrl = "http://api.thescore.com/nfl/schedule";
-		String eventsUrlFormat = "http://api.thescore.com/nfl/events?id.in=%s";
+		String url = "http://sonnymoorepowerratings.com/m-basket.htm";
+		
+		URL obj = new URL(url);
+		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+		// optional default is GET
+		con.setRequestMethod("GET");
+
+		int responseCode = con.getResponseCode();
+		System.out.println("Response Code : " + responseCode);
+
+		BufferedReader in = new BufferedReader(
+		        new InputStreamReader(con.getInputStream()));
+		String content;
+		StringBuffer response = new StringBuffer();
+
+		ArrayList<PowerRanking> powerRankings = new ArrayList<PowerRanking>();
+		Boolean contentStarted = false;
+		while ((content = in.readLine()) != null) {
+			response.append(content);
+
+			if (contentStarted)
+			{
+				content = content.trim();
+
+				if (contentStarted && content.equals("<BR>"))
+				{
+					break;
+				}
+				
+				for (String inputLine : content.split("\n"))
+				{
+					int firstIndexOfSpace = inputLine.indexOf(' ');
+					String teamName = inputLine.substring(firstIndexOfSpace, inputLine.indexOf("    ", firstIndexOfSpace));
+					inputLine = inputLine.substring(inputLine.indexOf("    ", firstIndexOfSpace)).trim();
+					firstIndexOfSpace = inputLine.indexOf(' ');
+					int wins = Integer.parseInt(inputLine.substring(0, firstIndexOfSpace).trim());
+					inputLine = inputLine.substring(firstIndexOfSpace).trim();
+					firstIndexOfSpace = inputLine.indexOf(' ');
+					int loses = Integer.parseInt(inputLine.substring(0, firstIndexOfSpace).trim());
+					inputLine = inputLine.substring(firstIndexOfSpace).trim();
+					firstIndexOfSpace = inputLine.indexOf(' ');
+					int ties = Integer.parseInt(inputLine.substring(0, firstIndexOfSpace).trim());
+					inputLine = inputLine.substring(firstIndexOfSpace).trim();
+					firstIndexOfSpace = inputLine.indexOf(' ');
+					double sos = Double.parseDouble(inputLine.substring(0, firstIndexOfSpace).trim());
+					inputLine = inputLine.substring(firstIndexOfSpace).trim();
+					double powerRanking = Double.parseDouble(inputLine);
+					
+					powerRankings.add(new PowerRanking()
+							{{
+								setTeamName(GetTeamName(teamName));
+								setWins(wins);
+								setLoses(loses);
+								setTies(ties);
+								setSOS(sos);
+								setPowerRanking(powerRanking);
+							}});
+				}							
+			}
+
+			if (content.startsWith("<B>"))
+			{
+				contentStarted = true;
+			}
+			
+		}
+		in.close();
+		
+		System.out.println("Power Ranking Count " + powerRankings.size());
+		
+		return powerRankings;
+	}
+
+	public List<Event> getNcaabCurrentEvents() throws MalformedURLException, IOException, ParseException
+	{
+		String scheduleUrl = "http://api.thescore.com/ncaab/schedule";
+		String eventsUrlFormat = "http://api.thescore.com/ncaab/events?id.in=%s";
+
+		List<Event> matches = new ArrayList<>();
+		Calendar toDateCalendar = Calendar.getInstance();
+		toDateCalendar.add(Calendar.HOUR, 24);
+		List<Event> todayMatches = getMatchesByDate(new Date(), scheduleUrl, eventsUrlFormat);
+		List<Event> tomorrowMatches = getMatchesByDate(toDateCalendar.getTime(), scheduleUrl, eventsUrlFormat);
+		
+		for (Event event: todayMatches)
+		{
+			matches.add(event);
+		}
+		for (Event event: tomorrowMatches)
+		{
+			matches.add(event);
+		}
+
+		return matches;
+	}	
+
+	private List<Event> getMatchesByDate(Date matchDate, String scheduleUrl, String eventsUrlFormat) throws MalformedURLException, IOException, ParseException
+	{
 		List<Event> matches = new ArrayList<>();
 		ObjectMapper mapper = new ObjectMapper();
 		
@@ -169,7 +269,6 @@ public class CollegeBasketBallOddsRepository {
 		
 		return matches;
 	}	
-	
 	
 	private String getWebResponse(String url) throws MalformedURLException, IOException, ProtocolException {
 		URL obj = new URL(url);

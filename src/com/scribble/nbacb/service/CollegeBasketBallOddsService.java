@@ -6,13 +6,18 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.document.AttributeUpdate;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
 import com.amazonaws.services.dynamodbv2.document.PrimaryKey;
+import com.amazonaws.services.dynamodbv2.document.ScanOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.scribble.nbacb.models.PowerRanking;
 import com.scribble.nbacb.models.SonnyMoorePrediction;
 import com.scribble.nbacb.models.events.Event;
@@ -25,12 +30,47 @@ public class CollegeBasketBallOddsService {
 	public void updateNflSonnyMooreRankings(Table eventsTable) 
 			throws IOException, ParseException
 	{
-		List<PowerRanking> sonnyMoorePowerRankings = nbacbRepository.getSonnyMoorePowerRaking();
-		List<Event> events = nbacbRepository.getCurrentEvents();
+		List<PowerRanking> sonnyMoorePowerRankings = nbacbRepository.getNflSonnyMoorePowerRaking();
+		List<Event> events = nbacbRepository.getNflCurrentEvents();
 
 		updateSonnyMooreRanking(eventsTable, sonnyMoorePowerRankings, events);		
 	}
 
+	public void updateNcaabSonnyMooreRankings(Table eventsTable, Table ncaabTeamsTable) 
+			throws IOException, ParseException
+	{
+		Map<String, String> teamMap = getNcaabTeams(ncaabTeamsTable);
+		
+		List<PowerRanking> sonnyMoorePowerRankings = nbacbRepository.getNcaabSonnyMoorePowerRaking();
+		
+		for (PowerRanking ranking: sonnyMoorePowerRankings) 
+		{
+			if (teamMap.containsKey(ranking.getTeamName()))
+			{
+				ranking.setTeamName(teamMap.get(ranking.getTeamName()).toUpperCase());
+			}
+		}
+		
+		List<Event> events = nbacbRepository.getNcaabCurrentEvents();
+
+		updateSonnyMooreRanking(eventsTable, sonnyMoorePowerRankings, events);		
+	}
+	
+	private Map<String, String> getNcaabTeams(Table ncaabTeamsTable) 
+	{
+        ScanSpec spec = new ScanSpec();
+        ItemCollection<ScanOutcome> result = ncaabTeamsTable.scan(spec);
+        
+        Map<String, String> scoreTeams = new HashMap<>();
+        for (Item item: result)
+        {
+        	scoreTeams.put(item.getString("SonnyMooreTeamName").trim().toUpperCase(),
+        			item.getString("ScoreApiTeamName").trim().toUpperCase());
+        }
+        
+        return scoreTeams;
+	}
+	
 	private void updateSonnyMooreRanking(Table eventsTable, List<PowerRanking> sonnyMoorePowerRankings, List<Event> events)
 			throws ParseException {
 		Calendar toDateCalendar = Calendar.getInstance();
