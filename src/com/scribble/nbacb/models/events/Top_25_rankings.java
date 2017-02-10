@@ -3,47 +3,25 @@ package com.scribble.nbacb.models.events;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Generated;
 
-@Generated("org.jsonschema2pojo")
 public class Top_25_rankings {
 
-    private Integer home;
+    private Object home;
     private Object away;
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-    /**
-     * 
-     * @return
-     *     The home
-     */
-    public Integer getHome() {
+    public Object getHome() {
         return home;
     }
 
-    /**
-     * 
-     * @param home
-     *     The home
-     */
-    public void setHome(Integer home) {
+    public void setHome(Object home) {
         this.home = home;
     }
 
-    /**
-     * 
-     * @return
-     *     The away
-     */
     public Object getAway() {
         return away;
     }
 
-    /**
-     * 
-     * @param away
-     *     The away
-     */
     public void setAway(Object away) {
         this.away = away;
     }

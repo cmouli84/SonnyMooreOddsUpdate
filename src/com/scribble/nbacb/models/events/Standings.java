@@ -4,17 +4,26 @@ package com.scribble.nbacb.models.events;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Home {
+public class Standings {
 
-    private Long score;
+    private Away_ away;
+    private Home_ home;
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-    public Long getScore() {
-        return score;
+    public Away_ getAway() {
+        return away;
     }
 
-    public void setScore(Long score) {
-        this.score = score;
+    public void setAway(Away_ away) {
+        this.away = away;
+    }
+
+    public Home_ getHome() {
+        return home;
+    }
+
+    public void setHome(Home_ home) {
+        this.home = home;
     }
 
     public Map<String, Object> getAdditionalProperties() {

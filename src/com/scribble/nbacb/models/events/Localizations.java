@@ -3,9 +3,7 @@ package com.scribble.nbacb.models.events;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Generated;
 
-@Generated("org.jsonschema2pojo")
 public class Localizations {
 
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
