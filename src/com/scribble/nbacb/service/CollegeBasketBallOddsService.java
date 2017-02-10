@@ -97,7 +97,7 @@ public class CollegeBasketBallOddsService {
 				PowerRanking awayTeam = (awayTeamName == null) ? null : getMatchingTeamName(sonnyMoorePowerRankings, awayTeamName);
 
 				addEvent(eventsTable, new SonnyMoorePrediction() {{
-					setEventId(event.getId());
+					setEventId(event.getId().intValue());
 					setHomeTeamName(event.getHome_team().getFull_name());
 					setAwayTeamName(event.getAway_team().getFull_name());
 					setHomeTeamRanking((homeTeam == null) ? 0 : homeTeam.getPowerRanking());
