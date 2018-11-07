@@ -25,6 +25,7 @@ public class SonnyMooreOddsUpdateHandler implements RequestHandler<Object, Boole
     		service.updateNcaabSonnyMooreRankings(ncaabEvents, ncaabTeams);
         }
         catch (Exception ex) {
+        	ex.printStackTrace();
         	System.out.println(ex.toString());
         }
         

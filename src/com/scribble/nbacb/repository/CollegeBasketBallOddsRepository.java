@@ -17,6 +17,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.scribble.nbacb.models.PowerRanking;
@@ -174,17 +175,24 @@ public class CollegeBasketBallOddsRepository {
 					firstIndexOfSpace = inputLine.indexOf(' ');
 					double sos = Double.parseDouble(inputLine.substring(0, firstIndexOfSpace).trim());
 					inputLine = inputLine.substring(firstIndexOfSpace).trim();
-					double powerRanking = Double.parseDouble(inputLine);
+					try
+					{
+						double powerRanking = Double.parseDouble(inputLine);
+						powerRankings.add(new PowerRanking()
+						{{
+							setTeamName(GetTeamName(teamName));
+							setWins(wins);
+							setLoses(loses);
+							setTies(ties);
+							setSOS(sos);
+							setPowerRanking(powerRanking);
+						}});
+					}
+					catch (Exception ex) 
+					{
+						System.out.println(ex.toString());
+					}
 					
-					powerRankings.add(new PowerRanking()
-							{{
-								setTeamName(GetTeamName(teamName));
-								setWins(wins);
-								setLoses(loses);
-								setTies(ties);
-								setSOS(sos);
-								setPowerRanking(powerRanking);
-							}});
 				}							
 			}
 
@@ -228,6 +236,7 @@ public class CollegeBasketBallOddsRepository {
 	{
 		List<Event> matches = new ArrayList<>();
 		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		
 		String scheduleResponse = getWebResponse(scheduleUrl);
 		Season season = mapper.readValue(scheduleResponse, Season.class);
