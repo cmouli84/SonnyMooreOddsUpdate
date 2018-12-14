@@ -12,6 +12,7 @@ public class Away_team {
     private Object colour_2;
     private String division;
     private String full_name;
+    private String name;
     private String search_name;
     private Long id;
     private Object location;
@@ -67,6 +68,14 @@ public class Away_team {
 
     public void setFull_name(String full_name) {
         this.full_name = full_name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getSearch_name() {

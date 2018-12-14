@@ -27,52 +27,45 @@ public class CollegeBasketBallOddsService {
 
 	private CollegeBasketBallOddsRepository nbacbRepository = new CollegeBasketBallOddsRepository();
 
-	public void updateNflSonnyMooreRankings(Table eventsTable) 
-			throws IOException, ParseException
-	{
+	public void updateNflSonnyMooreRankings(Table eventsTable) throws IOException, ParseException {
 		List<PowerRanking> sonnyMoorePowerRankings = nbacbRepository.getNflSonnyMoorePowerRaking();
 		List<Event> events = nbacbRepository.getNflCurrentEvents();
 
-		updateSonnyMooreRanking(eventsTable, sonnyMoorePowerRankings, events);		
+		updateSonnyMooreRanking(eventsTable, sonnyMoorePowerRankings, events);
 	}
 
-	public void updateNcaabSonnyMooreRankings(Table eventsTable, Table ncaabTeamsTable) 
-			throws IOException, ParseException
-	{
+	public void updateNcaabSonnyMooreRankings(Table eventsTable, Table ncaabTeamsTable)
+			throws IOException, ParseException {
 		Map<String, String> teamMap = getNcaabTeams(ncaabTeamsTable);
-		
+
 		List<PowerRanking> sonnyMoorePowerRankings = nbacbRepository.getNcaabSonnyMoorePowerRaking();
-		
-		for (PowerRanking ranking: sonnyMoorePowerRankings) 
-		{
-			if (teamMap.containsKey(ranking.getTeamName()))
-			{
+
+		for (PowerRanking ranking : sonnyMoorePowerRankings) {
+			if (teamMap.containsKey(ranking.getTeamName())) {
 				ranking.setTeamName(teamMap.get(ranking.getTeamName()).toUpperCase());
 			}
 		}
-		
+
 		List<Event> events = nbacbRepository.getNcaabCurrentEvents();
 
-		updateSonnyMooreRanking(eventsTable, sonnyMoorePowerRankings, events);		
+		updateSonnyMooreRanking(eventsTable, sonnyMoorePowerRankings, events);
 	}
-	
-	private Map<String, String> getNcaabTeams(Table ncaabTeamsTable) 
-	{
-        ScanSpec spec = new ScanSpec();
-        ItemCollection<ScanOutcome> result = ncaabTeamsTable.scan(spec);
-        
-        Map<String, String> scoreTeams = new HashMap<>();
-        for (Item item: result)
-        {
-        	scoreTeams.put(item.getString("SonnyMooreTeamName").trim().toUpperCase(),
-        			item.getString("ScoreApiTeamName").trim().toUpperCase());
-        }
-        
-        return scoreTeams;
+
+	private Map<String, String> getNcaabTeams(Table ncaabTeamsTable) {
+		ScanSpec spec = new ScanSpec();
+		ItemCollection<ScanOutcome> result = ncaabTeamsTable.scan(spec);
+
+		Map<String, String> scoreTeams = new HashMap<>();
+		for (Item item : result) {
+			scoreTeams.put(item.getString("SonnyMooreTeamName").trim().toUpperCase(),
+					item.getString("ScoreApiTeamName").trim().toUpperCase());
+		}
+
+		return scoreTeams;
 	}
-	
-	private void updateSonnyMooreRanking(Table eventsTable, List<PowerRanking> sonnyMoorePowerRankings, List<Event> events)
-			throws ParseException {
+
+	private void updateSonnyMooreRanking(Table eventsTable, List<PowerRanking> sonnyMoorePowerRankings,
+			List<Event> events) throws ParseException {
 		Calendar toDateCalendar = Calendar.getInstance();
 		Date currentTime = toDateCalendar.getTime();
 		toDateCalendar.add(Calendar.HOUR, 1);
@@ -82,59 +75,59 @@ public class CollegeBasketBallOddsService {
 		Date resultToDateCalendar = resultCalendar.getTime();
 		resultCalendar.add(Calendar.HOUR, -1);
 		Date resultFromDateCalendar = resultCalendar.getTime();
-		
-		for (Event event: events)
-		{
+
+		for (Event event : events) {
 			DateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
 			Date eventDate = format.parse(event.getGame_date());
 
-			if (eventDate.after(currentTime) && eventDate.before(toDate))
-			{
-				String homeTeamName = event.getHome_team().getFull_name().trim().toUpperCase();
-				String awayTeamName = event.getAway_team().getFull_name().trim().toUpperCase();
+			if (eventDate.after(currentTime) && eventDate.before(toDate)) {
+				String homeTeamName = event.getHome_team().getName().trim().toUpperCase();
+				String awayTeamName = event.getAway_team().getName().trim().toUpperCase();
 
-				PowerRanking homeTeam = (homeTeamName == null) ? null : getMatchingTeamName(sonnyMoorePowerRankings, homeTeamName);
-				PowerRanking awayTeam = (awayTeamName == null) ? null : getMatchingTeamName(sonnyMoorePowerRankings, awayTeamName);
+				PowerRanking homeTeam = (homeTeamName == null) ? null
+						: getMatchingTeamName(sonnyMoorePowerRankings, homeTeamName);
+				PowerRanking awayTeam = (awayTeamName == null) ? null
+						: getMatchingTeamName(sonnyMoorePowerRankings, awayTeamName);
 
-				addEvent(eventsTable, new SonnyMoorePrediction() {{
-					setEventId(event.getId().intValue());
-					setHomeTeamName(event.getHome_team().getFull_name());
-					setAwayTeamName(event.getAway_team().getFull_name());
-					setHomeTeamRanking((homeTeam == null) ? 0 : homeTeam.getPowerRanking());
-					setAwayTeamRanking((awayTeam == null) ? 0 : awayTeam.getPowerRanking());
-					setGameDate(eventDate);
-				}});
+				addEvent(eventsTable, new SonnyMoorePrediction() {
+					{
+						setEventId(event.getId().intValue());
+						setHomeTeamName(event.getHome_team().getName());
+						setAwayTeamName(event.getAway_team().getName());
+						setHomeTeamRanking((homeTeam == null) ? 0 : homeTeam.getPowerRanking());
+						setAwayTeamRanking((awayTeam == null) ? 0 : awayTeam.getPowerRanking());
+						setGameDate(eventDate);
+					}
+				});
 			}
 
-			if (eventDate.after(resultFromDateCalendar) && eventDate.before(resultToDateCalendar))
-			{
+			if (eventDate.after(resultFromDateCalendar) && eventDate.before(resultToDateCalendar)) {
 				System.out.println("Event Id before update : " + event.getId());
 				updateEvent(eventsTable, event);
 			}
 		}
 	}
-	
-	private void addEvent(Table events, SonnyMoorePrediction prediction)
-	{
-        Item currentEvent = new Item();
-        currentEvent.withInt("EventId", prediction.getEventId());
-        currentEvent.withString("HomeTeamName", prediction.getHomeTeamName());
-        currentEvent.withString("AwayTeamName", prediction.getAwayTeamName());
-        currentEvent.withDouble("HomeTeamRanking", prediction.getHomeTeamRanking());
-        currentEvent.withDouble("AwayTeamRanking", prediction.getAwayTeamRanking());
-        currentEvent.withString("EventDate", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(prediction.getGameDate()));
-        
-    	events.putItem(currentEvent);
+
+	private void addEvent(Table events, SonnyMoorePrediction prediction) {
+		Item currentEvent = new Item();
+		currentEvent.withInt("EventId", prediction.getEventId());
+		currentEvent.withString("HomeTeamName", prediction.getHomeTeamName());
+		currentEvent.withString("AwayTeamName", prediction.getAwayTeamName());
+		currentEvent.withDouble("HomeTeamRanking", prediction.getHomeTeamRanking());
+		currentEvent.withDouble("AwayTeamRanking", prediction.getAwayTeamRanking());
+		currentEvent.withString("EventDate",
+				new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(prediction.getGameDate()));
+
+		events.putItem(currentEvent);
 
 	}
-	
-	private void updateEvent(Table events, Event event)
-	{
+
+	private void updateEvent(Table events, Event event) {
 		System.out.println(event.getId());
 		System.out.println(event.getBox_score().getScore().getHome().getScore());
 		System.out.println(event.getBox_score().getScore().getAway().getScore());
 		System.out.println(getOdd(event));
-		
+
 		PrimaryKey primaryKey = new PrimaryKey();
 		primaryKey.addComponent("EventId", event.getId());
 		AttributeUpdate homeScoreUpdate = new AttributeUpdate("HomeScore");
@@ -143,59 +136,47 @@ public class CollegeBasketBallOddsService {
 		awayScoreUpdate.put(event.getBox_score().getScore().getAway().getScore());
 		AttributeUpdate homeOdds = new AttributeUpdate("HomeOdds");
 		homeOdds.put(getOdd(event));
-		
+
 		events.updateItem(primaryKey, homeScoreUpdate, awayScoreUpdate, homeOdds);
 	}
-	
-	private Double getOdd(Event event)
-	{
-		return event.getOdd() == null || event.getOdd().getHome_odd().startsWith("pk") || event.getOdd().getHome_odd().startsWith("N") 
-				? -999999 
-				: event.getOdd().getHome_odd().startsWith("T") 
-					? (-1) * Double.parseDouble(event.getOdd().getAway_odd()) 
-					: Double.parseDouble(event.getOdd().getHome_odd());
+
+	private Double getOdd(Event event) {
+		return event.getOdd() == null || event.getOdd().getHome_odd().startsWith("pk")
+				|| event.getOdd().getHome_odd().startsWith("N")
+						? -999999
+						: event.getOdd().getHome_odd().startsWith("T")
+								? (-1) * Double.parseDouble(event.getOdd().getAway_odd())
+								: Double.parseDouble(event.getOdd().getHome_odd());
 	}
-	
+
 	private PowerRanking getMatchingTeamName(List<PowerRanking> sonnyMoorePowerRanking, String teamName) {
 //		ArrayList<PowerRanking> secondMatch = new ArrayList<PowerRanking>();
 		System.out.println("TeamName : " + teamName);
-		
-		for (PowerRanking powerRanking : sonnyMoorePowerRanking)
-		{
-			if (teamName.equals(powerRanking.getTeamName()))
-			{
+
+		for (PowerRanking powerRanking : sonnyMoorePowerRanking) {
+			if (teamName.equals(powerRanking.getTeamName())) {
 				System.out.println("MATCH : " + powerRanking.getTeamName());
 				return powerRanking;
 			}
 
-/*			if (powerRanking.getTeamName().startsWith(teamName))
-			{
-				secondMatch.add(powerRanking);
-			}*/
-		}
-		
-/*		PowerRanking hardMatch = TryFindMatch(teamName, sonnyMoorePowerRanking, "HC");
-		if (hardMatch != null)
-		{
-			System.out.println(hardMatch.getTeamName());
-			return hardMatch;
+			/*
+			 * if (powerRanking.getTeamName().startsWith(teamName)) {
+			 * secondMatch.add(powerRanking); }
+			 */
 		}
 
-		if (secondMatch.size() == 1)
-		{
-			System.out.println("MATCH : " + secondMatch.get(0).getTeamName());
-			return secondMatch.get(0);
-		}
-		else
-		{
-			PowerRanking matchTeam = TryFindMatch(teamName, sonnyMoorePowerRanking, "FW");
-			if (matchTeam != null)
-			{
-				System.out.println(matchTeam.getTeamName());
-				return matchTeam;
-			}
-		}*/
-		
+		/*
+		 * PowerRanking hardMatch = TryFindMatch(teamName, sonnyMoorePowerRanking,
+		 * "HC"); if (hardMatch != null) { System.out.println(hardMatch.getTeamName());
+		 * return hardMatch; }
+		 * 
+		 * if (secondMatch.size() == 1) { System.out.println("MATCH : " +
+		 * secondMatch.get(0).getTeamName()); return secondMatch.get(0); } else {
+		 * PowerRanking matchTeam = TryFindMatch(teamName, sonnyMoorePowerRanking,
+		 * "FW"); if (matchTeam != null) { System.out.println(matchTeam.getTeamName());
+		 * return matchTeam; } }
+		 */
+
 		return null;
 	}
 }

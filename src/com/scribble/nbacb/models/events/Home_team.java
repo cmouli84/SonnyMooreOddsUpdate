@@ -11,6 +11,7 @@ public class Home_team {
     private Object colour_1;
     private Object colour_2;
     private String division;
+    private String name;
     private String full_name;
     private String search_name;
     private Long id;
@@ -59,6 +60,14 @@ public class Home_team {
 
     public void setDivision(String division) {
         this.division = division;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getFull_name() {
